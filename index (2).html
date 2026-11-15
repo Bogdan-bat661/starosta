@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Староста</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg:#f3f1ec;--card:#fff;--tx:#1b1d21;--mut:#6b7078;--bd:#dedbd3;--ac:#1d4ed8;--acx:#fff;--ok:#16794a;--no:#b42318;--late:#a15c00;--okb:#dcf3e6;--nob:#fde4e1;--lateb:#fdeccc;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161a;--card:#1e2126;--tx:#eef0f3;--mut:#9aa1ab;--bd:#2d3239;--ac:#7aa2ff;--acx:#0b1220;--ok:#6fdc9f;--no:#ff9b91;--late:#f5c36a;--okb:#143726;--nob:#43201d;--lateb:#402e0c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14161a;--card:#1e2126;--tx:#eef0f3;--mut:#9aa1ab;--bd:#2d3239;--ac:#7aa2ff;--acx:#0b1220;--ok:#6fdc9f;--no:#ff9b91;--late:#f5c36a;--okb:#143726;--nob:#43201d;--lateb:#402e0c;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:17px/1.4 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;max-width:560px;margin-inline:auto;padding:calc(12px + env(safe-area-inset-top,0px)) 14px calc(40px + env(safe-area-inset-bottom,0px))}
+h1{font-size:22px;margin:4px 0 10px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{flex:1;padding:11px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:inherit;font-weight:600}
+.tabs button.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+input{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+.row{display:flex;gap:8px;margin-bottom:8px}.row>*{flex:1}.row>.sm{flex:0 0 90px}
+.btn{padding:11px 14px;border:0;border-radius:10px;background:var(--ac);color:var(--acx);font:inherit;font-weight:600;width:100%}
+.btn.ghost{background:transparent;color:var(--ac);border:1px solid var(--bd)}
+.mut{color:var(--mut);font-size:14px}
+.me{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:10px 0 6px}
+.me button{padding:12px 4px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:10px;font:inherit;font-size:15px;font-weight:600}
+.me .ok.on{background:var(--okb);color:var(--ok);border-color:var(--ok)}
+.me .no.on{background:var(--nob);color:var(--no);border-color:var(--no)}
+.me .late.on{background:var(--lateb);color:var(--late);border-color:var(--late)}
+.st{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--bd)}
+.st .n{flex:1;min-width:0;overflow-wrap:anywhere}
+.tag{font-size:14px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--bg);color:var(--mut)}
+.tag.ok{background:var(--okb);color:var(--ok)}.tag.no{background:var(--nob);color:var(--no)}.tag.late{background:var(--lateb);color:var(--late)}
+textarea{width:100%;min-height:130px;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+.x{background:none;border:0;color:var(--no);font-size:20px}
+.err{background:var(--nob);color:var(--no);padding:8px 12px;border-radius:10px;margin-bottom:10px;font-size:15px}
+pre{white-space:pre-wrap;font:inherit;background:var(--bg);padding:10px;border-radius:10px;border:1px solid var(--bd)}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+</style>
+</head>
+<body>
+<h1>Староста</h1>
+<div class="tabs"><button id="t-day">Пари</button><button id="t-gr">Група</button></div>
+<div id="app"></div>
+<script>
+var SB_URL='https://buwqrduqdegztvvoehbm.supabase.co',SB_KEY='sb_publishable_TLYa19aTTuZAJ7pQogdGcg_KUuTOvo2',ADMIN_ID='6448845286';
+var tg=window.Telegram&&Telegram.WebApp;try{if(tg){tg.ready();tg.expand()}}catch(e){}
+var tu=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
+var me=tu?{id:String(tu.id),name:((tu.first_name||'')+' '+(tu.last_name||'')).trim()||tu.username||'Без імені'}:null;
+if(!me){var gid='',gn='';try{gid=localStorage.getItem('gid')||'';gn=localStorage.getItem('gname')||''}catch(e){}
+ if(!gid)gid='web'+Math.random().toString(36).slice(2,8);
+ if(!gn)gn=prompt('Ваше ім’я та прізвище:')||'Гість';
+ try{localStorage.setItem('gid',gid);localStorage.setItem('gname',gn)}catch(e){}
+ me={id:gid,name:gn}}
+function isAdmin(){return !ADMIN_ID||me.id===ADMIN_ID}
+var L={ok:'Буду',no:'Не буду',late:'Спізнююсь'};
+var tab='day',members=[],pairs=[],marks={},openId=null,report='',err='';
+function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+var date=ymd(new Date());
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function label(){return new Date(date+'T12:00:00').toLocaleDateString('uk-UA',{weekday:'long',day:'numeric',month:'long'})}
+function api(path,opt){
+ var h={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'};
+ opt=opt||{};if(opt.headers)Object.keys(opt.headers).forEach(function(k){h[k]=opt.headers[k]});
+ return fetch(SB_URL+'/rest/v1/'+path,{method:opt.method||'GET',headers:h,body:opt.body}).then(function(r){if(!r.ok)throw new Error(r.status);return r.text()}).then(function(t){return t?JSON.parse(t):null})
+}
+function load(){
+ return api('roster?order=name').then(function(m){members=m||[];return api('pairs?date=eq.'+date+'&order=time')}).then(function(p){
+  pairs=p||[];marks={};if(!pairs.length)return[];
+  return api('marks?pair_id=in.('+pairs.map(function(x){return x.id}).join(',')+')')
+ }).then(function(rows){(rows||[]).forEach(function(r){(marks[r.pair_id]=marks[r.pair_id]||{})[r.user_id]=r.status});err='';render()})
+ .catch(function(){err='Немає зв’язку з сервером. Спробуйте пізніше.';render()})
+}
+function render(){
+ document.getElementById('t-day').className=tab==='day'?'on':'';
+ document.getElementById('t-gr').className=tab==='gr'?'on':'';
+ var mine=members.filter(function(m){return m.user_id===me.id})[0];
+ var h=err?'<div class="err">'+esc(err)+'</div>':'';
+ if(!SB_URL){document.getElementById('app').innerHTML='<div class="card">Сховище ще не підключено.</div>';return}
+ if(tab==='gr'){
+  if(isAdmin())h+='<div class="card"><div class="mut" style="margin-bottom:8px">Додайте студентів (ПІБ), по одному в рядок</div><textarea id="bulk" placeholder="Іваненко Олена"></textarea><div style="height:8px"></div><button class="btn" data-a="addroster">Додати до списку</button></div>';
+  h+='<div class="card"><b>Група</b> <span class="mut">('+members.length+')</span>'+(members.length?members.map(function(m){return'<div class="st"><span class="n">'+esc(m.name)+'</span><span class="tag'+(m.user_id?' ok':'')+'">'+(m.user_id?'в додатку':'не підключений')+'</span>'+(isAdmin()?(m.user_id?'<button class="x" data-a="unlink" data-i="'+m.id+'" aria-label="Відв’язати">↺</button>':'')+'<button class="x" data-a="delm" data-i="'+m.id+'" aria-label="Видалити">✕</button>':'')+'</div>'}).join(''):'<div class="mut">Список порожній.</div>')+'</div>';
+  h+='<div class="mut">Ваш Telegram ID: '+esc(me.id)+'</div>';
+ } else {
+  h+='<input type="date" id="dt" value="'+date+'"><div class="mut" style="margin:6px 0 10px">'+esc(label())+'</div>';
+  if(!mine){var free=members.filter(function(m){return !m.user_id});h+='<div class="card"><b>Оберіть себе у списку</b>'+(free.length?free.map(function(m){return'<div class="st"><span class="n">'+esc(m.name)+'</span><button class="btn ghost" style="width:auto" data-a="claim" data-i="'+m.id+'">Це я</button></div>'}).join(''):'<div class="mut" style="margin-top:6px">Вільних імен немає. Попросіть старосту додати вас до списку.</div>')+'</div>'}
+  if(isAdmin())h+='<div class="card"><div class="row"><input id="tm" class="sm" placeholder="09:00"><input id="nm" placeholder="Назва пари"></div><button class="btn" data-a="addpair">Додати пару</button></div>';
+  if(!pairs.length)h+='<div class="mut">На цей день пар немає.</div>';
+  pairs.forEach(function(p){
+   var mk=marks[p.id]||{},c={ok:0,no:0,late:0};Object.keys(mk).forEach(function(k){if(c[mk[k]]!==undefined)c[mk[k]]++});
+   h+='<div class="card"><b>'+esc(p.time||'')+' '+esc(p.name)+'</b><div class="mut">Буде '+c.ok+' · не буде '+c.no+' · спізнюються '+c.late+'</div>';
+   if(mine)h+='<div class="me">'+['ok','no','late'].map(function(s){return'<button class="'+s+(mk[me.id]===s?' on':'')+'" data-a="mark" data-p="'+p.id+'" data-v="'+s+'">'+L[s]+'</button>'}).join('')+'</div>';
+   h+='<button class="btn ghost" data-a="open" data-i="'+p.id+'">'+(openId===p.id?'Сховати список':'Хто що відмітив')+'</button>';
+   if(openId===p.id){
+    h+=members.map(function(m){var v=mk[m.user_id];return'<div class="st"><span class="n">'+esc(m.name)+'</span><span class="tag '+(v||'')+'">'+(v?L[v]:'—')+'</span></div>'}).join('');
+    if(isAdmin())h+='<div style="height:8px"></div><button class="btn ghost" data-a="delpair" data-i="'+p.id+'">Видалити пару</button>';
+   }
+   h+='</div>';
+  });
+  if(pairs.length&&isAdmin()){h+='<button class="btn" data-a="report">Скласти звіт для чату</button>';if(report)h+='<div style="height:10px"></div><pre>'+esc(report)+'</pre><button class="btn ghost" data-a="copy">Скопіювати</button>'}
+ }
+ document.getElementById('app').innerHTML=h;
+}
+function makeReport(){
+ var t='Відвідування, '+label();
+ pairs.forEach(function(p){var mk=marks[p.id]||{},no=[],late=[],none=[];
+  members.forEach(function(m){var v=mk[m.user_id];if(v==='no')no.push(m.name);else if(v==='late')late.push(m.name);else if(!v)none.push(m.name)});
+  t+='\n\n'+(p.time||'')+' '+p.name+'\nНе буде: '+(no.join(', ')||'—')+'\nСпізнюються: '+(late.join(', ')||'—');
+  if(none.length)t+='\nНе відмітились: '+none.join(', ');
+ });
+ return t.trim();
+}
+function fail(){err='Не вдалося зберегти. Спробуйте ще раз.';render()}
+document.addEventListener('click',function(e){
+ if(e.target.id==='t-day'){tab='day';render();return}
+ if(e.target.id==='t-gr'){tab='gr';render();return}
+ var b=e.target.closest('[data-a]');if(!b)return;var a=b.dataset.a;
+ if(a==='mark'){var pid=b.dataset.p,v=b.dataset.v,mk=marks[pid]=marks[pid]||{};
+  if(mk[me.id]===v){delete mk[me.id];render();api('marks?pair_id=eq.'+pid+'&user_id=eq.'+encodeURIComponent(me.id),{method:'DELETE'}).catch(fail)}
+  else{mk[me.id]=v;render();api('marks?on_conflict=pair_id,user_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({pair_id:pid,user_id:me.id,status:v})}).catch(fail)}
+  return}
+ if(a==='open'){openId=openId===b.dataset.i?null:b.dataset.i;render();return}
+ if(a==='addpair'){var nm=document.getElementById('nm').value.trim(),tm=document.getElementById('tm').value.trim();if(!nm)return;
+  api('pairs',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({date:date,time:tm,name:nm})}).then(load).catch(fail);return}
+ if(a==='delpair'){api('pairs?id=eq.'+b.dataset.i,{method:'DELETE'}).then(function(){openId=null;return load()}).catch(fail);return}
+ if(a==='delm'){api('roster?id=eq.'+b.dataset.i,{method:'DELETE'}).then(load).catch(fail);return}
+ if(a==='unlink'){api('roster?id=eq.'+b.dataset.i,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({user_id:null})}).then(load).catch(fail);return}
+ if(a==='claim'){api('roster?id=eq.'+b.dataset.i+'&user_id=is.null',{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({user_id:me.id})}).then(load).catch(fail);return}
+ if(a==='addroster'){var have={};members.forEach(function(m){have[m.name.toLowerCase()]=1});var rows=[];document.getElementById('bulk').value.split('\n').forEach(function(x){x=x.trim();if(x&&!have[x.toLowerCase()]){have[x.toLowerCase()]=1;rows.push({name:x})}});if(!rows.length)return;api('roster',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(rows)}).then(load).catch(fail);return}
+ if(a==='report'){report=makeReport();render();return}
+ if(a==='copy'){try{navigator.clipboard.writeText(report).then(function(){b.textContent='Скопійовано'},function(){b.textContent='Виділіть текст і скопіюйте вручну'})}catch(x){b.textContent='Виділіть текст і скопіюйте вручну'}}
+});
+document.addEventListener('change',function(e){if(e.target.id==='dt'&&e.target.value){date=e.target.value;openId=null;report='';load()}});
+render();
+if(SB_URL){
+ load();
+ setInterval(function(){if(document.hidden)return;var a=document.activeElement;if(a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'))return;load()},15000);
+}
+</script>
+</body>
+</html>
